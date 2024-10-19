@@ -1,0 +1,80 @@
+# -*- mode: ruby -*-
+
+# vi: set ft=ruby :
+
+$script = <<SCRIPT
+ping -c 2 yahoo.com > /dev/null ; if [ $? -ne 0 ]; then echo -e "nameserver 8.8.8.8\nnameserver 4.2.2.2" > /etc/resolv.conf; else echo "DNS fix not required"; fi
+cp /vagrant/files/config/runonce.sh /root/
+chmod a+x /root/runonce.sh
+sed -i '/swap/ s/^/#/' /etc/fstab
+sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
+sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
+yum install at -y
+systemctl enable atd && systemctl start atd
+echo "/root/runonce.sh > /tmp/runonce.log 2>&1" | at now + 2 minutes
+reboot
+fi
+SCRIPT
+
+boxes = [
+    {
+        :name => "kub-master",
+	:fqdn => "kub-master.k8s.lab",
+        :eth1 => "192.168.10.31",
+        :mem => "4096",
+        :cpu => "2"
+    },
+    {
+       :name => "kub-worker1",
+	:fqdn => "kub-worker1.k8s.lab",
+        :eth1 => "192.168.10.32",
+        :mem => "4096",
+        :cpu => "2"
+    },
+    {
+        :name => "kub-worker2",
+	:fqdn => "kub-worker2.k8s.lab",
+        :eth1 => "192.168.10.33",
+        :mem => "4096",
+        :cpu => "2"
+    },
+]
+
+Vagrant.configure(2) do |config|
+  
+  config.vm.boot_timeout = 600
+  config.vm.box = "centos/7"
+  config.vm.box_url = 'file:///Users/venkat/vagrant/images/CentOS-7-x86_64-Vagrant-2004_01.VirtualBox.box'
+  #config.vm.synced_folder '.', '/vagrant', disabled: true
+  config.vm.provider "virtualbox" do |v, override|
+
+    override.vm.box = "centos/7"
+  end
+
+
+  boxes.each do |opts|
+    config.vm.define opts[:name] do |config|
+      config.vm.hostname = opts[:fqdn]
+
+      config.vm.provider "virtualbox" do |v|
+        v.memory = opts[:mem]
+        v.cpus = opts[:cpu]
+        #v.gui = true
+      end
+
+      config.vm.provider "virtualbox" do |v|
+        v.customize ["modifyvm", :id, "--memory", opts[:mem]]
+        v.customize ["modifyvm", :id, "--cpus", opts[:cpu]]
+      end
+
+          config.vm.network :private_network, ip: opts[:eth1]
+#	  config.vm.provision "shell", inline: $startup, run: 'always'
+	  config.vm.provision "shell", inline: $script
+  # Turn on shared folders
+    # Step 1: Insert/mount Virtual Box Guest Addtions disk
+    # Stpe2: Run /vagrant/files/config/install_guest_additions.sh script
+    # Step3: Uncomment below line
+    # config.vm.synced_folder "files/data/#{opts[:name]}", "/data"
+    end
+  end
+end
