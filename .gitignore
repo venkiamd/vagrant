@@ -1,0 +1,12 @@
+# Directories
+images/
+image/
+.vagrant/
+puppet/files/dvd/
+
+# File Types
+*.box
+*.rpm
+*.exe
+*.tar
+*.gz
