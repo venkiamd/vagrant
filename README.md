@@ -1,5 +1,5 @@
 ## About
-This repository contains lab setups using Oracle VirtualBox and Vagrant. It provides a convenient way to set up development environments using these tools.
+This repository contains Kubernetes lab setup using Oracle VirtualBox and Vagrant. It provides a convenient way to set up development environments using these tools.
 
 ## Main Function Points
 Provides lab setups using Oracle VirtualBox and Vagrant
